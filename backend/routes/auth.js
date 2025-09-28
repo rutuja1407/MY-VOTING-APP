@@ -17,7 +17,7 @@ function euclidean(a, b) {
 router.post('/register', async (req, res) => {
   try {
     const { aadhaar, name, phone, email, password, faceDescriptor } = req.body;
-    console.log('📝 Registration attempt for:', name, 'Aadhaar:', aadhaar);
+    console.log('📝 Registration attempt for:', name, 'Aadhaar:', aadhaar,'pass',password);
 
     // Check if Aadhaar exists in voter list
     const voter = await Voter.findOne({ aadhaar });
@@ -48,8 +48,6 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: "Phone number already registered." });
     }
 
-    // Hash password securely
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user and save faceDescriptor array
     const newUser = new User({
@@ -57,7 +55,7 @@ router.post('/register', async (req, res) => {
       name,
       phone,
       email,
-      password: hashedPassword,
+      password,
       hasVoted: false,
       faceDescriptor,
       registrationDate: new Date()
@@ -65,7 +63,6 @@ router.post('/register', async (req, res) => {
 
     const savedUser = await newUser.save();
     console.log('✅ User registered successfully in confirmed_voters:', name);
-    console.log('📊 User ID:', savedUser._id);
 
     res.status(201).json({
       message: "User registered successfully in confirmed_voters collection!",
@@ -79,7 +76,7 @@ router.post('/register', async (req, res) => {
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
       return res.status(400).json({
-        error: `${field} already exists. Please use a different ${field}.`
+        error: `${field} already exists. Please use a different ${field}`
       });
     }
     res.status(500).json({ error: error.message });
@@ -99,14 +96,17 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       console.log('❌ User not found:', userId);
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "User not found" });
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(
+      password,
+      user.password
+    );
     if (!isValidPassword) {
       console.log('❌ Invalid password for:', userId);
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "Invalid password" });
     }
 
     // Euclidean distance between stored and login face descriptor
@@ -133,125 +133,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-
-const userSchema = new mongoose.Schema({
-  aadhaar: {
-    type: String,
-    required: [true, 'Aadhaar number is required'],
-    unique: true,
-    validate: {
-      validator: function(v) {
-        return /^\d{12}$/.test(v);
-      },
-      message: 'Aadhaar number must be exactly 12 digits'
-    },
-    index: true
-  },
-  
-  name: {
-    type: String,
-    required: [true, 'Full name is required'],
-    trim: true,
-    minlength: [2, 'Name must be at least 2 characters long'],
-    maxlength: [100, 'Name cannot exceed 100 characters']
-  },
-  
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    unique: true,
-    validate: {
-      validator: function(v) {
-        return /^[6-9]\d{9}$/.test(v);
-      },
-      message: 'Phone number must be a valid 10-digit Indian mobile number starting with 6-9'
-    },
-    index: true
-  },
-  
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    validate: {
-      validator: function(v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: 'Please enter a valid email address'
-    },
-    index: true
-  },
-  
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long']
-  },
-  
-  hasVoted: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-  
-  userType: {
-    type: String,
-    enum: ['voter', 'admin'],
-    default: 'voter'
-  },
-  
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  
-  registrationDate: {
-    type: Date,
-    default: Date.now
-  },
-  
-  votingDate: {
-    type: Date,
-    default: null
-  },
-  faceDescriptor: 
-  { type: [Number], required: true }
-  ,
-}, {
-  timestamps: true,
-  collection: 'confirmed_voters' // This specifies the collection name
-});
-
-// Pre-save middleware to hash password
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Ensure password is never included in JSON output
-userSchema.set('toJSON', {
-  transform: function(doc, ret) {
-    delete ret.password;
-    delete ret.__v;
-    return ret;
-  }
-});
-
-console.log('Stored faceDescriptor length:', user.faceDescriptor.length);
-console.log('Login faceDescriptor length:', loginDescriptor.length);
-console.log('Euclidean distance:', distance);
-
 
 module.exports = router;

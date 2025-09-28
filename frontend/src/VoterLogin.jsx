@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import  { useState, useRef, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import * as faceapi from "face-api.js";
 import "./LoginPage.css";
@@ -156,7 +156,7 @@ function VoterLogin() {
       }
 
       // Submit registration with face descriptor
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -184,6 +184,7 @@ function VoterLogin() {
         setRegisterCameraOn(false);
         registerStreamRef.current?.getTracks().forEach(track => track.stop());
         registerStreamRef.current = null;
+        navigate('/voter-login');
       } else {
         toast.error(data.error || "Registration failed");
       }
@@ -258,7 +259,7 @@ function VoterLogin() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -268,16 +269,25 @@ function VoterLogin() {
         }),
       });
       const data = await res.json();
-      if (res.status === 200 && data.match) {
+      if (res.status === 200 && data.user.match) {
         toast.success("Login successful!");
         navigate('/voter-dashboard');
-      } else if (data && !data.match) {
-        setLoginError("Face does not match!");
-        toast.error("Face does not match our records.");
+      } else {  
+        if(data.user && !data.user.match) {
+          toast.error("Face does not match. Please try again.");
+          return;
+        }
+        toast.error(data.error || "Unexpected error during login.");
       } 
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error.message || "Network error. Please try again.");
+    } finally{
+      setLoginDescriptor(null);
+      setLoginData({ userId: "", password: "" });
+      setLoginCameraOn(false);
+      loginStreamRef.current?.getTracks().forEach(track => track.stop());
+      loginStreamRef.current = null;
     }
   };
 
@@ -320,7 +330,7 @@ function VoterLogin() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -353,7 +363,6 @@ function VoterLogin() {
       }
     } catch (err) {
       console.error("Error registering:", err);
-      toast.error("Network error. Please try again.");
     }
 
     setRegisterError("");

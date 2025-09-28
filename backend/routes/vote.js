@@ -3,6 +3,7 @@ const User = require('../models/User');
 const router = express.Router();
 
 // Option 1: Update by user ID (recommended)
+
 router.patch("/", async (req, res) => {
     console.log('inside vote');
     

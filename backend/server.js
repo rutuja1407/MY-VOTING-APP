@@ -1,15 +1,21 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+// Import routes
+const authRoutes = require('./routes/auth');
+const voteRoutes = require('./routes/vote')
+const candidateRoutes = require('./routes/candidate');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // React frontend URL
-  credentials: true
+  origin: ['http://localhost:3000','http://localhost:3001'], // React frontend URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
@@ -30,34 +36,18 @@ const connectDB = async () => {
     });
     
     console.log('✅ Connected to MongoDB successfully');
-    console.log(`📊 Database: ${mongoose.connection.name}`);
+    console.log( `Database: ${mongoose.connection.name}`);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
-    
-    if (error.name === 'MongoNetworkError') {
-      console.error('💡 Tip: Make sure MongoDB is installed and running');
-    }
-    
     process.exit(1);
   }
 };
 
-// Connection event handlers
-mongoose.connection.on('error', (error) => {
-  console.error('MongoDB connection error:', error);
-});
 
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ Disconnected from MongoDB');
-});
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const voteRoutes = require('./routes/vote')
 // Health check route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Voting System API is running! 🗳️',
+    message: 'Voting System API is running! 🗳',
     status: 'healthy',
     database: mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌',
     timestamp: new Date().toISOString()
@@ -67,6 +57,7 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vote', voteRoutes);
+app.use('/api/candidates', candidateRoutes);
 
 
 // Error handling middleware
@@ -97,53 +88,17 @@ app.use((error, req, res, next) => {
 // Handle 404 routes
 app.use('*', (req, res) => {
   res.status(404).json({
-    error: `Route ${req.method} ${req.originalUrl} not found`
+    error:`Route ${req.method} ${req.originalUrl} not found`
   });
 });
-
-// Graceful shutdown
-const gracefulShutdown = async (signal) => {
-  console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
-  
-  try {
-    await mongoose.connection.close();
-    console.log('🔒 MongoDB connection closed successfully');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during graceful shutdown:', error);
-    process.exit(1);
-  }
-};
-
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start server after connecting to database
 const startServer = async () => {
   try {
     await connectDB();
-    
-    const server = app.listen(PORT, () => {
-      console.log('🚀 =========================================');
-      console.log('🚀 🗳️  VOTING SYSTEM API STARTED  🗳️');
-      console.log('🚀 =========================================');
+    app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 API Base URL: http://localhost:${PORT}`);
-      console.log(`🔗 Health Check: http://localhost:${PORT}/`);
-      console.log('🚀 =========================================');
     });
-    
-    // Handle server errors
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-        console.error('💡 Try a different port or close the other application');
-      } else {
-        console.error('❌ Server error:', error);
-      }
-      process.exit(1);
-    });
-    
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

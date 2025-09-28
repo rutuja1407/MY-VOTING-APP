@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './VoterDashboard.css';
 import { toast } from 'sonner';
@@ -13,46 +13,7 @@ function VoterDashboard() {
   const [expandedCards, setExpandedCards] = useState({});
   // Add state for terms acceptance checkbox
   const [termsAccepted, setTermsAccepted] = useState(false);
-
-  // Mock candidate data
-  const candidates = [
-    {
-      id: 'candidate-1',
-      name: 'Sarah Johnson',
-      image: 'https://images.unsplash.com/photo-1553028826-defa0c2187d3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHdvbWFuJTIwbGVhZGVyfGVufDF8fHx8MTc1ODE3NDIwNHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      position: 'President',
-      party: 'Progressive Alliance',
-      description: 'Dedicated to sustainable development and economic growth. With over 15 years in public service, Sarah brings innovative solutions to complex challenges.',
-      experience: '15 years in public service, Former City Council Member'
-    },
-    {
-      id: 'candidate-2',
-      name: 'Michael Chen',
-      image: 'https://images.unsplash.com/photo-1658249682516-c7789d418978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxlJTIwZXhlY3V0aXZlJTIwcHJvZmVzc2lvbmFsJTIwc3VpdHxlbnwxfHx8fDE3NTgxNzQyMDl8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      position: 'President',
-      party: 'Unity Party',
-      description: 'Focused on education reform and healthcare accessibility. Michael has successfully led multiple community initiatives and believes in transparent governance.',
-      experience: '12 years in education sector, Former School Board Chairman'
-    },
-    {
-      id: 'candidate-3',
-      name: 'David Rodriguez',
-      image: 'https://images.unsplash.com/photo-1645106281521-86da01d1031d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwb2xpdGljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzU4MTc0MjAxfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      position: 'President',
-      party: 'Democratic Coalition',
-      description: 'Champion of social justice and environmental protection. David brings a fresh perspective with his background in environmental law and community organizing.',
-      experience: '10 years as Environmental Lawyer, Community Organizer'
-    },
-    {
-      id: 'candidate-4',
-      name: 'David Tho',
-      image: 'https://images.unsplash.com/photo-1645106281521-86da01d1031d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwb2xpdGljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzU4MTc0MjAxfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      position: 'President',
-      party: 'Democratic Coalition',
-      description: 'Champion of social justice and environmental protection. David brings a fresh perspective with his background in environmental law and community organizing.',
-      experience: '10 years as Environmental Lawyer, Community Organizer'
-    }
-  ];
+  const [candidates,setCandidates]=useState([])
 
   const handleVote = (candidateId) => {
     const candidate = candidates.find(c => c.id === candidateId);
@@ -71,15 +32,15 @@ function VoterDashboard() {
       setShowVotingConfirmation(false);
       
       try {
-        const res = await fetch(`http://localhost:5000/api/vote/`, {
+        const res = await fetch("http://localhost:8000/api/vote/", {
           method: "PATCH",
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            aadhaar: "234567890101"
+          aadhaar: "234567890101"
           })
-        });
+       });
 
         const data = await res.json();
 
@@ -135,7 +96,24 @@ function VoterDashboard() {
     setShowVotingConfirmation(false);
     setSelectedCandidate(null);
   };
-
+  useEffect(()=>{
+    const fetchCandidates = async()=>{
+      try {
+        const res = await fetch("http://localhost:8000/api/candidates");
+        const data = await res.json();
+        if(res.status===200){
+          setCandidates(data.candidates);
+        }else{
+          toast.error(data.error || "Failed to fetch candidates");
+        }
+        console.log('Fetched candidates:', data);
+      } catch (error) {
+        console.log('Error fetching candidates:', error);
+        toast.error("Failed to fetch candidates");
+      }
+    }
+    fetchCandidates();
+  },[])
   return (
     <div className="voter-dashboard">
       {/* Header - Keep same */}

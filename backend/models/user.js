@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
+
 const userSchema = new mongoose.Schema({
   aadhaar: {
     type: String,
@@ -94,24 +95,15 @@ const userSchema = new mongoose.Schema({
 // Pre-save middleware to hash password
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password, 10);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Ensure password is never included in JSON output
-userSchema.set('toJSON', {
-  transform: function(doc, ret) {
-    delete ret.password;
-    delete ret.__v;
-    return ret;
-  }
-});
+
 
 const User = mongoose.model('User', userSchema);
 
