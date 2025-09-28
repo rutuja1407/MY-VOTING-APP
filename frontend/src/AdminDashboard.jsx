@@ -210,11 +210,11 @@ export default function AdminDashboard() {
   const updateCandidateRequest = useCallback(async (id, payload) => {
     try {
       const res = await fetch(`http://localhost:8000/api/candidates/${id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to update candidate");
+      if (!res.ok) toast.error("Failed to update candidate");
       return await res.json();
     } catch (e) {
       console.error(e);
@@ -244,12 +244,13 @@ export default function AdminDashboard() {
         } catch {}
       } else if (modalMode === "edit" && editIndex !== null) {
         const existing = candidates[editIndex];
+        console.log("Editing candidate:", existing);
         if (!existing) return;
         const updated = { ...existing, ...form, id: existing.id };
         setModalOpen(false);
         setForm(emptyForm);
         try {
-          await updateCandidateRequest(existing.id, updated);
+          await updateCandidateRequest(existing._id, updated);
           toast.success("Candidate updated");
           await refreshCandidates();
         } catch {}

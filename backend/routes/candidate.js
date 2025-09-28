@@ -15,9 +15,9 @@ router.get('/', async (req, res) => {
     }
 });
 router.post('/', async (req, res) => {
-    const { name, party, age, position,description } = req.body;
+    const { name, party, age, position,description,image } = req.body;
     try {
-      const candidate = new Candidate({ name, party, position,description,experience: age });
+      const candidate = new Candidate({ name, party, position,description,age,image });
       await candidate.save();
       res.status(201).json({
         success: true,
@@ -28,10 +28,26 @@ router.post('/', async (req, res) => {
     }
   });
 
-router.put('/:id', async (req, res) => {
+router.patch('/:id', async (req, res) => {
+
+  const { name, party, age, position,description,image,status } = req.body;
     try {
-      const candidate = await Candidate.findByIdAndUpdate(req.params.id, req.body, { new: true });
-      res.status(200).json(candidate);
+      const candidate = await Candidate.findByIdAndUpdate(req.params.id, {
+        name, 
+        party, 
+        position,
+        description,
+        age,
+        image,
+        status
+      }, { new: true });
+      console.log('Updated candidate:', candidate);
+      res.status(200).json({
+        message:"Candidate updated successfully",
+        success: true,
+        candidate,
+      });
+
     } catch (error) {
       res.status(400).json({ error: 'Could not update candidate' });
     }
@@ -47,5 +63,4 @@ router.delete('/:id', async (req, res) => {
     }
 });
   
-  
-  module.exports = router;
+module.exports = router;

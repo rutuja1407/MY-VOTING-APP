@@ -114,6 +114,7 @@ function VoterDashboard() {
     }
     fetchCandidates();
   },[])
+  console.log('candidates',candidates);
   return (
     <div className="voter-dashboard">
       {/* Header - Keep same */}
@@ -292,7 +293,7 @@ function VoterDashboard() {
                           
                           <div className="candidate-experience">
                             <h4>Experience</h4>
-                            <p>{candidate.experience}</p>
+                            <p>{candidate.age}</p>
                           </div>
                         </div>
                       </div>

@@ -4,14 +4,8 @@ const router = express.Router();
 
 // Option 1: Update by user ID (recommended)
 
-router.patch("/", async (req, res) => {
-    console.log('inside vote');
-    
+router.patch("/", async (req, res) => { 
   const { aadhaar } = req.body;
-
-  console.log('userId',aadhaar);
-  
-  
   try {
     // Find user by ID and update hasVoted to true
     const updatedUser = await User.findOneAndUpdate(
