@@ -10,43 +10,39 @@ function AdminLogin({ onLoginSuccess }) {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    // Simple validation
-    if (!userId || !password) {
-      setError("Please enter both User ID and Password");
-      setLoading(false);
-      return;
-    }
+  // Simple validation
+  if (!userId || !password) {
+    setError("Please enter both User ID and Password");
+    setLoading(false);
+    return;
+  }
 
-    try {
-      // Mock admin data for onLoginSuccess
-      const mockAdminData = {
-        id: "admin_001",
-        userId: userId,
-        name: "Administrator",
-        email: "admin@voting.com",
-        role: "admin"
-      };
+  // Only allow hardcoded admin credentials
+  if (userId === "admin1@domain.com" && password === "Admin123") {
+    const mockAdminData = {
+      id: "admin_001",
+      userId: userId,
+      name: "Administrator",
+      email: "admin1@domain.com",
+      role: "admin"
+    };
+    onLoginSuccess(mockAdminData);
+    toast.success("Login successful!");
+    navigate('/admin-dashboard');
+    setLoading(false);
+    return;
+  } else {
+    setError("Invalid credentials. Access denied.");
+    toast.error("Login failed: invalid credentials");
+    setLoading(false);
+    return;
+  }
+};
 
-      // Call onLoginSuccess with mock admin data
-      onLoginSuccess(mockAdminData);
-      
-      toast.success("Login successful!");
-      
-      // Navigate to admin dashboard
-      navigate('/admin-dashboard');
-      
-    } catch (error) {
-      console.error("Navigation error:", error);
-      setError("Something went wrong. Please try again.");
-      toast.error("Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div style={containerStyle}>

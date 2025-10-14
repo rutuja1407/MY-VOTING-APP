@@ -91,6 +91,23 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCandidates = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/candidates");
+        const data = await res.json();
+        if (!cancelled) setCandidates(Array.isArray(data?.candidates) ? data.candidates : []);
+      } catch (err) {
+        console.error("Error fetching candidates:", err);
+      }
+    };
+    fetchCandidates();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const analyticsData = useMemo(() => {
     const totalVotes = candidates.reduce((sum, c) => sum + (Number(c.votes) || 0), 0);
     const activeCandidates = candidates.filter((c) => c.status === "active").length;
@@ -159,23 +176,25 @@ export default function AdminDashboard() {
 
   // Backend call for deleting single candidate, then refresh list
   const confirmDeleteCandidate = useCallback(async () => {
-    if (deleteIndex === null) return;
-    const candidateToDelete = candidates[deleteIndex];
-    if (!candidateToDelete) return;
+  if (deleteIndex === null) return;
+  const candidateToDelete = candidates[deleteIndex];
+  if (!candidateToDelete) return;
 
-    try {
-      const res = await fetch(`http://localhost:8000/api/candidates/${candidateToDelete.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete candidate");
+  try {
+    const candidateId = candidateToDelete._id || candidateToDelete.id;
+    const res = await fetch(`http://localhost:8000/api/candidates/${candidateId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete candidate");
 
-      await refreshCandidates();
-      setSnackbar(true);
-      setTimeout(() => setSnackbar(false), 2200);
-      setDeleteOpen(false);
-    } catch (err) {
-      toast.error("Failed to delete candidate");
-      console.error(err);
-    }
-  }, [deleteIndex, candidates, refreshCandidates]);
+    await refreshCandidates();
+    setSnackbar(true);
+    setTimeout(() => setSnackbar(false), 2200);
+    setDeleteOpen(false);
+  } catch (err) {
+    toast.error("Failed to delete candidate");
+    console.error(err);
+  }
+}, [deleteIndex, candidates, refreshCandidates]);
+
 
   const handleFormChange = useCallback((e) => {
     const { name, value } = e.target;

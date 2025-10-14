@@ -1,9 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const User = require('../models/User');
+const User = require('../models/user');
 const Voter = require('../models/Voter');
 const router = express.Router();
-
+// Register user (stores faceDescriptor)
+// import * as faceapi from 'face-api.js';
 // Euclidean distance function for face descriptor comparison
 function euclidean(a, b) {
   let sum = 0;
@@ -13,43 +14,50 @@ function euclidean(a, b) {
   return Math.sqrt(sum);
 }
 
-// Register user (stores faceDescriptor)
+
+
+// Utility to compute Euclidean distance between two face descriptors
+const calculateDistance = (desc1, desc2) => {
+  if (!desc1 || !desc2) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < desc1.length; i++) {
+    sum += Math.pow(desc1[i] - desc2[i], 2);
+  }
+  return Math.sqrt(sum);
+};
+
 router.post('/register', async (req, res) => {
   try {
     const { aadhaar, name, phone, email, password, faceDescriptor } = req.body;
-    console.log('📝 Registration attempt for:', name, 'Aadhaar:', aadhaar,'pass',password);
+    console.log('📝 Registration attempt for:', name, 'Aadhaar:', aadhaar);
 
-    // Check if Aadhaar exists in voter list
+    // Aadhaar validation
     const voter = await Voter.findOne({ aadhaar });
     if (!voter) {
-      console.log('❌ Aadhaar not found in voter list:', aadhaar);
       return res.status(400).json({ error: "Aadhaar is not in voter list." });
     }
-    console.log('✅ Aadhaar found in voter list');
 
-    // Check if already registered
+    // Duplicate Aadhaar, email, and phone validations
     const existingUser = await User.findOne({ aadhaar });
-    if (existingUser) {
-      console.log('❌ Aadhaar already registered:', aadhaar);
-      return res.status(400).json({ error: "Aadhaar already registered." });
-    }
+    if (existingUser) return res.status(400).json({ error: "Aadhaar already registered." });
 
-    // Check for duplicate email
     const duplicateEmail = await User.findOne({ email });
-    if (duplicateEmail) {
-      console.log('❌ Email already exists:', email);
-      return res.status(400).json({ error: "Email already registered." });
-    }
+    if (duplicateEmail) return res.status(400).json({ error: "Email already registered." });
 
-    // Check for duplicate phone
     const duplicatePhone = await User.findOne({ phone });
-    if (duplicatePhone) {
-      console.log('❌ Phone already exists:', phone);
-      return res.status(400).json({ error: "Phone number already registered." });
+    if (duplicatePhone) return res.status(400).json({ error: "Phone number already registered." });
+
+    // ✅ Face duplicate check
+    const allUsers = await User.find({}, { faceDescriptor: 1, name: 1, _id: 0 });
+    for (let user of allUsers) {
+      const distance = calculateDistance(faceDescriptor, user.faceDescriptor);
+      if (distance < 0.45) { // Threshold, can be adjusted based on model accuracy
+        console.log('❌ Face already exists, matching user:', user.name);
+        return res.status(400).json({ error: "Face already exists in the system." });
+      }
     }
 
-
-    // Create new user and save faceDescriptor array
+    // Continue registration
     const newUser = new User({
       aadhaar,
       name,
@@ -58,21 +66,19 @@ router.post('/register', async (req, res) => {
       password,
       hasVoted: false,
       faceDescriptor,
-      registrationDate: new Date()
+      registrationDate: new Date(),
     });
 
     const savedUser = await newUser.save();
-    console.log('✅ User registered successfully in confirmed_voters:', name);
 
     res.status(201).json({
-      message: "User registered successfully in confirmed_voters collection!",
+      message: "User registered successfully!",
       userId: savedUser._id,
-      name: savedUser.name
+      name: savedUser.name,
     });
 
   } catch (error) {
     console.error('❌ Registration error:', error);
-    // Handle MongoDB duplicate key errors nicely
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
       return res.status(400).json({
@@ -82,6 +88,7 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // Login user with faceDescriptor check
 router.post('/login', async (req, res) => {
@@ -116,22 +123,30 @@ router.post('/login', async (req, res) => {
 
     console.log(`Distance: ${distance}, face match? ${match}`);
 
-    res.json({
+   return res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user._id,
-        aadhaar: user.aadhaar,
-        name: user.name,
-        email: user.email,
-        hasVoted: user.hasVoted,
-        phone: user.phone,
-        match
-      }
+      user
     });
   } catch (error) {
     console.error('❌ Login error:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get('/aadhaar/:aadhaar',async(req,res)=>{
+  console.log('hee');
+  
+  const {aadhaar} = req.params
+  try {
+    const user = await User.findOne({
+      aadhaar
+    })
+
+    return res.status(200).json({user})
+  } catch (error) {    
+    console.log("Error fetching user",error);
+    
+  }
+})
 
 module.exports = router;

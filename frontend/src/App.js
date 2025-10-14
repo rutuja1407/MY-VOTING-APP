@@ -8,6 +8,7 @@ import CandidateManager from "./CandidateManager";
 import AdminDashboard from "./AdminDashboard";  
 import VoterDashboard from "./VoterDashboard";
 import { Toaster } from "sonner";
+import { UserProvider } from "./contexts/user.context";
 
 function App() {
   const [admin, setAdmin] = useState(null);
@@ -21,7 +22,8 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <UserProvider>
+       <BrowserRouter>
       {/* ✅ Toaster must be inside BrowserRouter but outside Routes */}
       <Toaster richColors position="top-right" />
 
@@ -65,6 +67,8 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+    </UserProvider>
+   
   );
 }
 

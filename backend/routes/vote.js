@@ -1,46 +1,43 @@
 const express = require('express');
-const User = require('../models/User');
+const User = require('../models/user');
 const router = express.Router();
-
-// Option 1: Update by user ID (recommended)
 
 router.patch("/", async (req, res) => { 
   const { aadhaar } = req.body;
+  console.log('aadhaar',aadhaar);
+  
   try {
-    // Find user by ID and update hasVoted to true
-    const updatedUser = await User.findOneAndUpdate(
-      {
-        aadhaar
-      },
-      { 
-        hasVoted: true,
-        votingDate: new Date() // Also record when they voted
-      },
-      { 
-        new: true, // Return updated document
-        runValidators: true // Run schema validation
-      }
-    );
+    // Find user by aadhaar
+    const voter = await User.findOne({ aadhaar });
 
-    if (!updatedUser) {
+    if (!voter) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log('✅ Vote recorded for user:', updatedUser.name);
+    if (voter.hasVoted) {
+      return res.status(400).json({ error: "This Aadhaar has already voted." });
+    }
+
+    // Mark as voted and record when they voted
+    voter.hasVoted = true;
+    voter.votingDate = new Date();
+    await voter.save();
+
+    console.log('✅ Vote recorded for user:', voter.name);
     res.status(200).json({ 
       message: "Vote recorded successfully",
       user: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        hasVoted: updatedUser.hasVoted,
-        votingDate: updatedUser.votingDate
+        id: voter._id,
+        name: voter.name,
+        hasVoted: voter.hasVoted,
+        votingDate: voter.votingDate
       }
     });
-
   } catch (error) {
     console.error('❌ Error recording vote:', error);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 module.exports = router;

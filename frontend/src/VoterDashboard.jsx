@@ -2,6 +2,7 @@ import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './VoterDashboard.css';
 import { toast } from 'sonner';
+import { useUser } from './contexts/user.context';
 
 function VoterDashboard() {
   const navigate = useNavigate();
@@ -14,88 +15,93 @@ function VoterDashboard() {
   // Add state for terms acceptance checkbox
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [candidates,setCandidates]=useState([])
+  const {user,setUser} = useUser()
 
-  const handleVote = (candidateId) => {
-    const candidate = candidates.find(c => c.id === candidateId);
-    if (candidate) {
-      setSelectedCandidate(candidate);
-      setShowVotingConfirmation(true);
-    }
-  };
+  
+// Add a new state to track loading/voting action
+ const handleVote = (candidateId) => {
+    const candidate = candidates.find(c => c.id === candidateId);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+      setShowVotingConfirmation(true);
+    }
+  };
 
-  const confirmVote = async() => {
-    if (selectedCandidate) {
-      setVotes(prev => ({
-        ...prev,
-        [selectedCandidate.position]: selectedCandidate.id
-      }));
-      setShowVotingConfirmation(false);
+
+const confirmVote = async () => {
+
+  
+  if (selectedCandidate) {
+    setShowVotingConfirmation(false)
+
+    try {
+      const res = await fetch("http://localhost:8000/api/vote/", {
+        method: "PATCH",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aadhaar: localStorage.getItem('aadhaar'),
+          position: selectedCandidate.position,
+          candidateId: selectedCandidate.id
+        }),
+      });
+
+      const data = await res.json();
+      console.log('data',data);
       
-      try {
-        const res = await fetch("http://localhost:8000/api/vote/", {
-          method: "PATCH",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-          aadhaar: "234567890101"
-          })
-       });
-
-        const data = await res.json();
-
-        if (res.status === 200) {
-          toast.success(`Vote cast successfully for ${selectedCandidate.name}!`);
-          setSelectedCandidate(null);
-        } else {
-          toast.error(data.error || "Failed to cast vote");
-        }
-        
-      } catch (error) {
-        console.log('Error confirming vote:', error);
-        toast.error("Failed to cast vote");
+      if (res.status === 200) {
+        toast.success(`Vote cast successfully for ${selectedCandidate.name}!`);
+        // Update local votes state immediately
+        setVotes(prev => ({
+          ...prev,
+          [selectedCandidate.position]: selectedCandidate.id
+        }));
+        setUser((user)=> ({...user,hasVoted:true}))
+      } else {
+        toast.error(data.error || "Failed to cast vote");
       }
+    } catch (error) {
+      console.log('error casting vote',error);
+      
+      toast.error("Failed to cast vote");
+    } finally {
+      setSelectedCandidate(null);
     }
-  };
+  }
+};
 
-  const hasVotedForPosition = (position) => {
-    return votes[position] !== undefined;
-  };
-
-  const getVotedCandidateId = (position) => {
-    return votes[position];
-  };
-
-  const toggleExpand = (candidateId) => {
+const toggleExpand = (candidateId) => {
     setExpandedCards(prev => ({
       ...prev,
       [candidateId]: !prev[candidateId]
     }));
   };
 
-  const handleLogout = () => {
+const handleLogout = () => {
     toast.success("Logout successfull")
+    setUser({})
+    localStorage.removeItem('aadhaar')
     navigate('/',{replace:true});
   };
 
   // Updated closeRulesModal function with validation
-  const closeRulesModal = () => {
+const closeRulesModal = () => {
     if (!termsAccepted) {
       toast.error("Please accept the terms and conditions to proceed");
       return;
     }
     setShowRulesModal(false);
-  };
+};
 
   // Handle checkbox change
-  const handleTermsChange = (event) => {
+const handleTermsChange = (event) => {
     setTermsAccepted(event.target.checked);
-  };
+};
 
-  const closeVotingConfirmation = () => {
+const closeVotingConfirmation = () => {
     setShowVotingConfirmation(false);
     setSelectedCandidate(null);
   };
+
   useEffect(()=>{
     const fetchCandidates = async()=>{
       try {
@@ -114,7 +120,7 @@ function VoterDashboard() {
     }
     fetchCandidates();
   },[])
-  console.log('candidates',candidates);
+  
   return (
     <div className="voter-dashboard">
       {/* Header - Keep same */}
@@ -314,6 +320,7 @@ function VoterDashboard() {
                   
                   {/* Group candidates by position */}
                   {['President', 'Vice President'].map((position) => {
+                    
                     const positionCandidates = candidates.filter(c => c.position === position);
                     if (positionCandidates.length === 0) return null;
                     
@@ -351,13 +358,17 @@ function VoterDashboard() {
                                   </div>
                                 </div>
                                 <div className="table-cell action">
-                                  <button 
-                                    className={`vote-table-btn ${getVotedCandidateId(position) === candidate.id ? 'voted' : ''}`}
+                                  <button
+                                  disabled={user.hasVoted}
+                                  style={{ cursor: user.hasVoted ? 'not-allowed' : 'pointer' }}
+                                   className={`vote-table-btn`}
                                     onClick={() => handleVote(candidate.id)}
-                                    disabled={hasVotedForPosition(position) && getVotedCandidateId(position) !== candidate.id}
                                   >
-                                    {getVotedCandidateId(position) === candidate.id ? 'Voted' : 'Vote'}
+                                      {
+                                        user.hasVoted ? "Voted" : "Vote"
+                                      }
                                   </button>
+
                                 </div>
                               </div>
                             ))}

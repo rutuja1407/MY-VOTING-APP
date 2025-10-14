@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import * as faceapi from "face-api.js";
 import "./LoginPage.css";
 import { toast } from "sonner";
+import { useUser } from './contexts/user.context';
 
 function VoterLogin() {
   const [activeTab, setActiveTab] = useState("login");
   const navigate = useNavigate();
-
+  const {setUser} = useUser()
+  
   // Login form state
   const [loginData, setLoginData] = useState({ userId: "", password: "" });
   const [loginError, setLoginError] = useState("");
@@ -87,6 +89,10 @@ function VoterLogin() {
   };
 
   const toggleRegisterCamera = async () => {
+    if (!modelsLoaded) {
+    alert("Models are still loading, please wait.");
+    return;
+  }
     if (registerCameraOn) {
       registerStreamRef.current?.getTracks().forEach(track => track.stop());
       registerStreamRef.current = null;
@@ -105,92 +111,24 @@ function VoterLogin() {
   };
 
   // Capture face descriptor for registration
-  const captureRegisterFace = async () => {
-    if (!registerVideoRef.current) return alert("Camera not ready");
+
+   const captureRegisterFace = async () => {
+    if (!registerVideoRef.current) return toast.error("Camera not ready");
     const video = registerVideoRef.current;
     try {
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
         .withFaceDescriptor();
-
       if (!detection) {
-        alert("No face detected. Please try again.");
+        toast.error("No face detected. Please try again.");
         return;
       }
-
-      // Set face descriptor state
-      const descriptorArray = Array.from(detection.descriptor);
-      setFaceDescriptor(descriptorArray);
-
-      // Validate all registration inputs before submitting
-      const aadhaarRegex = /^\d{12}$/;
-      const phoneRegex = /^\d{10}$/;
-      const password = registerData.password;
-      const uppercaseRegex = /[A-Z]/;
-      const symbolRegex = /[!@#$%^&*(),.?":{}|<>]/;
-
-      if (!aadhaarRegex.test(registerData.aadhaar)) {
-        alert("Aadhaar number must be exactly 12 digits.");
-        return;
-      }
-      if (!phoneRegex.test(registerData.phone)) {
-        alert("Phone number must be exactly 10 digits.");
-        return;
-      }
-      if (password.length < 8) {
-        alert("Password must be at least 8 characters long.");
-        return;
-      }
-      if (!uppercaseRegex.test(password)) {
-        alert("Password must contain at least 1 uppercase letter.");
-        return;
-      }
-      if (!symbolRegex.test(password)) {
-        alert("Password must contain at least 1 symbol.");
-        return;
-      }
-      if (registerData.password !== registerData.confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
-
-      // Submit registration with face descriptor
-      const res = await fetch("http://localhost:8000/api/auth/register", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          aadhaar: registerData.aadhaar,
-          name: registerData.name,
-          phone: registerData.phone,
-          email: registerData.email,
-          password: registerData.password,
-          faceDescriptor: descriptorArray,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.status === 201) {
-        toast.success("Signup successful");
-        setFaceDescriptor(null);
-        setRegisterData({
-          aadhaar: "",
-          name: "",
-          phone: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setRegisterCameraOn(false);
-        registerStreamRef.current?.getTracks().forEach(track => track.stop());
-        registerStreamRef.current = null;
-        navigate('/voter-login');
-      } else {
-        toast.error(data.error || "Registration failed");
-      }
+      setFaceDescriptor(Array.from(detection.descriptor));
+      toast.success("Face captured for signup!");
     } catch (error) {
-      console.error("Register error:", error);
-      toast.error("Network error. Please try again.");
+      console.error("Face capture error:", error);
+      toast.error("Failed to capture face. Try again.");
     }
   };
 
@@ -270,7 +208,10 @@ function VoterLogin() {
       });
       const data = await res.json();
       if (res.status === 200 && data.user.match) {
+        // Save Aadhaar in local storage
+        localStorage.setItem('aadhaar', data.user.aadhaar);
         toast.success("Login successful!");
+         setUser(data.user || {});
         navigate('/voter-dashboard');
       } else {  
         if(data.user && !data.user.match) {
