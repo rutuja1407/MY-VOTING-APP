@@ -599,25 +599,23 @@ export default function AdminDashboard() {
   const handleFileUpload = useCallback(async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+  
     if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
       toast.error("Please select a valid CSV file");
       event.target.value = "";
       return;
     }
-
+  
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const csvData = String(e.target?.result ?? "");
-        const lines = csvData
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean);
+        const lines = csvData.split("\n").map((l) => l.trim()).filter(Boolean);
         if (lines.length < 2) {
-          toast.error("CSV file must contain at least header and one data row");
+          toast.error("CSV must contain at least one data row");
           return;
         }
+  
         const headers = lines[0]
           .split(",")
           .map((h) => h.trim().replace(/"/g, ""));
@@ -626,23 +624,24 @@ export default function AdminDashboard() {
           (h) => !headers.some((x) => x.toLowerCase().includes(h))
         );
         if (missing.length) {
-          toast.error(`Missing required columns: ${missing.join(", ")}`);
+          toast.error(`Missing columns: ${missing.join(", ")}`);
           return;
         }
-
+  
         const newCandidates = [];
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i]
             .split(",")
             .map((v) => v.trim().replace(/"/g, ""));
           if (values.length !== headers.length) continue;
+  
           const obj = {};
           headers.forEach((h, idx) => {
             obj[h.toLowerCase()] = values[idx] || "";
           });
+  
           if (obj.name && obj.party && obj.position && obj.description) {
             newCandidates.push({
-              id: Date.now() + i,
               name: obj.name,
               age: obj.age || "",
               party: obj.party,
@@ -656,23 +655,38 @@ export default function AdminDashboard() {
             });
           }
         }
-
-        if (newCandidates.length) {
-          setCandidates((prev) => [...prev, ...newCandidates]);
-          toast.success(
-            `Successfully imported ${newCandidates.length} candidates`
-          );
-        } else {
+  
+        if (!newCandidates.length) {
           toast.error("No valid candidate data found in CSV file");
+          return;
+        }
+  
+        // Send to backend
+        const res = await fetch("http://localhost:8000/api/candidates/bulk-upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates: newCandidates }),
+        });
+  
+        const data = await res.json();
+  
+        if (res.ok) {
+          toast.success(`Successfully uploaded ${data.candidates.length} candidates`);
+          // Update frontend state if desired
+          setCandidates((prev) => [...prev, ...data.candidates]);
+        } else {
+          toast.error(data.error || "Failed to upload candidates");
         }
       } catch (err) {
-        console.error("Error parsing CSV:", err);
-        toast.error("Error parsing CSV file. Please check the format.");
+        console.error("Error parsing/uploading CSV:", err);
+        toast.error("Error parsing or uploading CSV");
       }
     };
+  
     reader.readAsText(file);
     event.target.value = "";
   }, []);
+  
 
   const handleExportCSV = useCallback(() => {
     try {

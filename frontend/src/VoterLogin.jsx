@@ -4,6 +4,7 @@ import * as faceapi from "face-api.js";
 import "./LoginPage.css";
 import { toast } from "sonner";
 import { useUser } from './contexts/user.context';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 function VoterLogin() {
   const [activeTab, setActiveTab] = useState("login");
@@ -15,6 +16,7 @@ function VoterLogin() {
   const [loginError, setLoginError] = useState("");
   const [loginCameraOn, setLoginCameraOn] = useState(false);
   const [loginDescriptor, setLoginDescriptor] = useState(null);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register form state
   const [registerData, setRegisterData] = useState({
@@ -28,6 +30,8 @@ function VoterLogin() {
   const [registerError, setRegisterError] = useState("");
   const [registerCameraOn, setRegisterCameraOn] = useState(false);
   const [faceDescriptor, setFaceDescriptor] = useState(null);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
   // Webcam refs and streams
   const loginVideoRef = useRef(null);
@@ -234,6 +238,7 @@ function VoterLogin() {
       return;
     }
     try {
+      toast.loading("Logging in...", { id: 'login-submit' });
       const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -245,21 +250,20 @@ function VoterLogin() {
       });
       const data = await res.json();
       if (res.status === 200 && data.user.match) {
-        // Save Aadhaar in local storage
         localStorage.setItem('aadhaar', data.user.aadhaar);
-        toast.success("Login successful!");
-         setUser(data.user || {});
+        toast.success("Login successful!", { id: 'login-submit' });
+        setUser(data.user || {});
         navigate('/voter-dashboard');
       } else {  
         if(data.user && !data.user.match) {
-          toast.error("Face does not match. Please try again.");
+          toast.error("Face does not match. Please try again.", { id: 'login-submit' });
           return;
         }
-        toast.error(data.error || "Unexpected error during login.");
+        toast.error(data.error || "Unexpected error during login.", { id: 'login-submit' });
       } 
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error.message || "Network error. Please try again.");
+      toast.error(error.message || "Network error. Please try again.", { id: 'login-submit' });
     } finally{
       setLoginDescriptor(null);
       setLoginData({ userId: "", password: "" });
@@ -268,7 +272,6 @@ function VoterLogin() {
       loginStreamRef.current = null;
     }
   };
-
 
   const handleSubmitRegister = async (e) => {
     e.preventDefault();
@@ -346,7 +349,6 @@ function VoterLogin() {
         setRegisterCameraOn(false);
         registerStreamRef.current?.getTracks().forEach(track => track.stop());
         registerStreamRef.current = null;
-        // Optionally switch to login tab
         setActiveTab("login");
       } else {
         toast.error(data.error || "Registration failed", { id: 'register-submit' });
@@ -356,8 +358,6 @@ function VoterLogin() {
       console.error("Error registering:", err);
       toast.error("Network error. Please try again.", { id: 'register-submit' });
       setRegisterError("Network error. Please try again.");
-    } finally {
-      // Don't clear form on error, only on success
     }
   };
 
@@ -404,15 +404,43 @@ function VoterLogin() {
               className="login-input-theme"
               required
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={loginData.password}
-              onChange={handleLoginChange}
-              className="login-input-theme"
-              required
-            />
+            
+            {/* Password field with eye icon */}
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                type={showLoginPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={loginData.password}
+                onChange={handleLoginChange}
+                className="login-input-theme"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#818398',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#6a5ae0'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#818398'}
+                aria-label={showLoginPassword ? "Hide password" : "Show password"}
+              >
+                {showLoginPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
+            </div>
 
             <button
               type="button"
@@ -520,24 +548,78 @@ function VoterLogin() {
               className="login-input-theme"
               required
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={registerData.password}
-              onChange={handleRegisterChange}
-              className="login-input-theme"
-              required
-            />
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              value={registerData.confirmPassword}
-              onChange={handleRegisterChange}
-              className="login-input-theme"
-              required
-            />
+            
+            {/* Password field with eye icon */}
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                type={showRegisterPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password (min 8 chars, 1 uppercase, 1 symbol)"
+                value={registerData.password}
+                onChange={handleRegisterChange}
+                className="login-input-theme"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#818398',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#6a5ae0'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#818398'}
+                aria-label={showRegisterPassword ? "Hide password" : "Show password"}
+              >
+                {showRegisterPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
+            </div>
+
+            {/* Confirm Password field with eye icon */}
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                type={showRegisterConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={registerData.confirmPassword}
+                onChange={handleRegisterChange}
+                className="login-input-theme"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowRegisterConfirmPassword(!showRegisterConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#818398',
+                  transition: 'color 0.2s ease',
+                }}
+                
+              >
+                {showRegisterConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
+            </div>
 
             <button
               type="button"

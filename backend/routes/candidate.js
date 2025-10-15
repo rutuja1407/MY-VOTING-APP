@@ -63,4 +63,36 @@ router.delete('/:id', async (req, res) => {
     }
 });
   
+router.post("/bulk-upload", async (req, res) => {
+  try {
+    const candidates = req.body.candidates;
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      return res.status(400).json({ error: "No candidates provided" });
+    }
+
+    // Optional: sanitize and validate
+    const validCandidates = candidates.map((c) => ({
+      name: c.name,
+      age: c.age || "",
+      party: c.party,
+      position: c.position,
+      image: c.image || "",
+      description: c.description,
+      status: c.status || "active",
+      votes: c.votes || 0,
+    }));
+
+    // Insert into DB
+    const inserted = await Candidate.insertMany(validCandidates);
+
+    res.status(201).json({
+      message: `${inserted.length} candidates successfully uploaded.`,
+      candidates: inserted,
+    });
+  } catch (err) {
+    console.error("Bulk upload error:", err);
+    res.status(500).json({ error: "Failed to upload candidates." });
+  }
+});
 module.exports = router;
