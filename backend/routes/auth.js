@@ -123,9 +123,17 @@ router.post('/login', async (req, res) => {
 
     console.log(`Distance: ${distance}, face match? ${match}`);
 
-   return res.status(200).json({
+    res.json({
       message: "Login successful",
-      user
+      user: {
+        id: user._id,
+        aadhaar: user.aadhaar,
+        name: user.name,
+        email: user.email,
+        hasVoted: user.hasVoted,
+        phone: user.phone,
+        match
+      }
     });
   } catch (error) {
     console.error('❌ Login error:', error);
@@ -134,7 +142,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/aadhaar/:aadhaar',async(req,res)=>{
-  console.log('hee');
+ 
   
   const {aadhaar} = req.params
   try {

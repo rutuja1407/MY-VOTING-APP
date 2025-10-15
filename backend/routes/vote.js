@@ -1,10 +1,10 @@
 const express = require('express');
 const User = require('../models/user');
+const Candidate = require('../models/Candidate');
 const router = express.Router();
 
 router.patch("/", async (req, res) => { 
-  const { aadhaar } = req.body;
-  console.log('aadhaar',aadhaar);
+  const { aadhaar,candidateId } = req.body;
   
   try {
     // Find user by aadhaar
@@ -17,11 +17,21 @@ router.patch("/", async (req, res) => {
     if (voter.hasVoted) {
       return res.status(400).json({ error: "This Aadhaar has already voted." });
     }
+    const updatedCandidate =  await Candidate.findByIdAndUpdate(
+      candidateId,
+      { $inc: { votes: 1 } },
+      { new: true }
+    )
+    if (!updatedCandidate) {
+      return res.status(404).json({ error: "Candidate not found" });
+    }
 
     // Mark as voted and record when they voted
     voter.hasVoted = true;
     voter.votingDate = new Date();
     await voter.save();
+
+    
 
     console.log('✅ Vote recorded for user:', voter.name);
     res.status(200).json({ 

@@ -234,7 +234,6 @@ function VoterLogin() {
       return;
     }
     try {
-      toast.loading("Logging in...", { id: 'login-submit' });
       const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -246,20 +245,21 @@ function VoterLogin() {
       });
       const data = await res.json();
       if (res.status === 200 && data.user.match) {
+        // Save Aadhaar in local storage
         localStorage.setItem('aadhaar', data.user.aadhaar);
-        toast.success("Login successful!", { id: 'login-submit' });
-        setUser(data.user || {});
+        toast.success("Login successful!");
+         setUser(data.user || {});
         navigate('/voter-dashboard');
       } else {  
         if(data.user && !data.user.match) {
-          toast.error("Face does not match. Please try again.", { id: 'login-submit' });
+          toast.error("Face does not match. Please try again.");
           return;
         }
-        toast.error(data.error || "Unexpected error during login.", { id: 'login-submit' });
+        toast.error(data.error || "Unexpected error during login.");
       } 
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error.message || "Network error. Please try again.", { id: 'login-submit' });
+      toast.error(error.message || "Network error. Please try again.");
     } finally{
       setLoginDescriptor(null);
       setLoginData({ userId: "", password: "" });
@@ -268,6 +268,7 @@ function VoterLogin() {
       loginStreamRef.current = null;
     }
   };
+
 
   const handleSubmitRegister = async (e) => {
     e.preventDefault();
@@ -522,7 +523,7 @@ function VoterLogin() {
             <input
               type="password"
               name="password"
-              placeholder="Password (min 8 chars, 1 uppercase, 1 symbol)"
+              placeholder="Password"
               value={registerData.password}
               onChange={handleRegisterChange}
               className="login-input-theme"
