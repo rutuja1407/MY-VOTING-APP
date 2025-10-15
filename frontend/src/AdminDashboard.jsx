@@ -775,7 +775,7 @@ export default function AdminDashboard() {
       toast.error("Please select candidates to delete");
       return;
     }
-
+console.log("Deleting candidates:", Array.from(selectedCandidates));
     try {
       await Promise.all(
         Array.from(selectedCandidates).map((id) =>
