@@ -554,7 +554,7 @@ function VoterLogin() {
               <input
                 type={showRegisterPassword ? "text" : "password"}
                 name="password"
-                placeholder="Password (min 8 chars, 1 uppercase, 1 symbol)"
+                placeholder="Password"
                 value={registerData.password}
                 onChange={handleRegisterChange}
                 className="login-input-theme"
