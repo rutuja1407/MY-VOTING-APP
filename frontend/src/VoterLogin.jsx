@@ -1,4 +1,4 @@
-import  { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import * as faceapi from "face-api.js";
 import "./LoginPage.css";
@@ -8,7 +8,7 @@ import { useUser } from './contexts/user.context';
 function VoterLogin() {
   const [activeTab, setActiveTab] = useState("login");
   const navigate = useNavigate();
-  const {setUser} = useUser()
+  const {setUser} = useUser();
   
   // Login form state
   const [loginData, setLoginData] = useState({ userId: "", password: "" });
@@ -37,16 +37,26 @@ function VoterLogin() {
 
   // Load face-api.js models once on mount
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(true);
 
   useEffect(() => {
     const loadModels = async () => {
-      const MODEL_URL = '/models';  // Path to your public/models directory
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-      ]);
-      setModelsLoaded(true);
+      try {
+        const MODEL_URL = '/models';
+        toast.loading("Loading face detection models...", { id: 'models-loading' });
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        setModelsLoaded(true);
+        toast.success("Face detection ready!", { id: 'models-loading' });
+      } catch (error) {
+        console.error("Model loading error:", error);
+        toast.error("Failed to load face detection models", { id: 'models-loading' });
+      } finally {
+        setModelsLoading(false);
+      }
     };
     loadModels();
   }, []);
@@ -68,88 +78,115 @@ function VoterLogin() {
   // Camera toggle handlers
   const toggleLoginCamera = async () => {
     if (!modelsLoaded) {
-    alert("Models are still loading, please wait.");
-    return;
-  }
+      toast.error("Face detection models are still loading, please wait.");
+      return;
+    }
     if (loginCameraOn) {
       loginStreamRef.current?.getTracks().forEach(track => track.stop());
       loginStreamRef.current = null;
       setLoginCameraOn(false);
       setLoginDescriptor(null);
+      toast.info("Camera turned off");
     } else {
       try {
+        toast.loading("Starting camera...", { id: 'login-camera' });
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         loginStreamRef.current = stream;
         setLoginCameraOn(true);
+        toast.success("Camera ready!", { id: 'login-camera' });
       } catch(error) {
-        console.log('error', error);
-        alert("Unable to access camera. Please allow permissions.");
+        console.error('Camera error:', error);
+        toast.error("Unable to access camera. Please allow permissions.", { id: 'login-camera' });
       }
     }
   };
 
   const toggleRegisterCamera = async () => {
     if (!modelsLoaded) {
-    alert("Models are still loading, please wait.");
-    return;
-  }
+      toast.error("Face detection models are still loading, please wait.");
+      return;
+    }
     if (registerCameraOn) {
       registerStreamRef.current?.getTracks().forEach(track => track.stop());
       registerStreamRef.current = null;
       setRegisterCameraOn(false);
       setFaceDescriptor(null);
+      toast.info("Camera turned off");
     } else {
       try {
+        toast.loading("Starting camera...", { id: 'register-camera' });
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         registerStreamRef.current = stream;
         setRegisterCameraOn(true);
+        toast.success("Camera ready!", { id: 'register-camera' });
       } catch (error) {
         console.error("Camera access error:", error);
-        alert("Unable to access camera. Please allow permissions.");
+        toast.error("Unable to access camera. Please allow permissions.", { id: 'register-camera' });
       }
     }
   };
 
   // Capture face descriptor for registration
-
-   const captureRegisterFace = async () => {
-    if (!registerVideoRef.current) return toast.error("Camera not ready");
+  const captureRegisterFace = async () => {
+    if (!registerVideoRef.current) {
+      toast.error("Camera not ready");
+      return;
+    }
+    if (!modelsLoaded) {
+      toast.error("Face detection models not ready");
+      return;
+    }
+    
     const video = registerVideoRef.current;
     try {
+      toast.loading("Detecting face...", { id: 'register-face-capture' });
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
         .withFaceDescriptor();
+      
       if (!detection) {
-        toast.error("No face detected. Please try again.");
+        toast.error("No face detected. Please ensure your face is clearly visible and try again.", { id: 'register-face-capture' });
         return;
       }
+      
       setFaceDescriptor(Array.from(detection.descriptor));
-      toast.success("Face captured for signup!");
+      toast.success("Face captured successfully for signup!", { id: 'register-face-capture' });
     } catch (error) {
       console.error("Face capture error:", error);
-      toast.error("Failed to capture face. Try again.");
+      toast.error("Failed to capture face. Please try again.", { id: 'register-face-capture' });
     }
   };
 
   // Capture face descriptor for login
   const captureLoginFace = async () => {
-    if (!loginVideoRef.current) return toast.error("Camera not ready");
+    if (!loginVideoRef.current) {
+      toast.error("Camera not ready");
+      return;
+    }
+    if (!modelsLoaded) {
+      toast.error("Face detection models not ready");
+      return;
+    }
+    
     const video = loginVideoRef.current;
     try {
+      toast.loading("Detecting face...", { id: 'login-face-capture' });
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
         .withFaceDescriptor();
+      
       if (!detection) {
-        toast.error("No face detected. Please try again.");
+        toast.error("No face detected. Please ensure your face is clearly visible and try again.", { id: 'login-face-capture' });
         return;
       }
+      
       setLoginDescriptor(Array.from(detection.descriptor));
-      toast.success("Face captured for login!");
+      toast.success("Face captured successfully for login!", { id: 'login-face-capture' });
     } catch (error) {
       console.error("Face capture error:", error);
-      toast.error("Failed to capture face. Try again.");
+      toast.error("Failed to capture face. Please try again.", { id: 'login-face-capture' });
     }
   };
 
@@ -197,6 +234,7 @@ function VoterLogin() {
       return;
     }
     try {
+      toast.loading("Logging in...", { id: 'login-submit' });
       const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -208,21 +246,20 @@ function VoterLogin() {
       });
       const data = await res.json();
       if (res.status === 200 && data.user.match) {
-        // Save Aadhaar in local storage
         localStorage.setItem('aadhaar', data.user.aadhaar);
-        toast.success("Login successful!");
-         setUser(data.user || {});
+        toast.success("Login successful!", { id: 'login-submit' });
+        setUser(data.user || {});
         navigate('/voter-dashboard');
       } else {  
         if(data.user && !data.user.match) {
-          toast.error("Face does not match. Please try again.");
+          toast.error("Face does not match. Please try again.", { id: 'login-submit' });
           return;
         }
-        toast.error(data.error || "Unexpected error during login.");
+        toast.error(data.error || "Unexpected error during login.", { id: 'login-submit' });
       } 
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error.message || "Network error. Please try again.");
+      toast.error(error.message || "Network error. Please try again.", { id: 'login-submit' });
     } finally{
       setLoginDescriptor(null);
       setLoginData({ userId: "", password: "" });
@@ -243,34 +280,42 @@ function VoterLogin() {
 
     if (!aadhaarRegex.test(registerData.aadhaar)) {
       setRegisterError("Aadhaar number must be exactly 12 digits.");
+      toast.error("Aadhaar number must be exactly 12 digits.");
       return;
     }
     if (!phoneRegex.test(registerData.phone)) {
       setRegisterError("Phone number must be exactly 10 digits.");
+      toast.error("Phone number must be exactly 10 digits.");
       return;
     }
     if (password.length < 8) {
       setRegisterError("Password must be at least 8 characters long.");
+      toast.error("Password must be at least 8 characters long.");
       return;
     }
     if (!uppercaseRegex.test(password)) {
       setRegisterError("Password must contain at least 1 uppercase letter.");
+      toast.error("Password must contain at least 1 uppercase letter.");
       return;
     }
     if (!symbolRegex.test(password)) {
       setRegisterError("Password must contain at least 1 symbol.");
+      toast.error("Password must contain at least 1 symbol.");
       return;
     }
     if (registerData.password !== registerData.confirmPassword) {
       setRegisterError("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
     if (!faceDescriptor) {
       setRegisterError("Please capture your face before registering.");
+      toast.error("Please capture your face before registering.");
       return;
     }
 
     try {
+      toast.loading("Registering...", { id: 'register-submit' });
       const res = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -286,7 +331,7 @@ function VoterLogin() {
 
       const data = await res.json();
       if (res.status === 201) {
-        toast.success("Signup successful");
+        toast.success("Signup successful! You can now login.", { id: 'register-submit' });
         setFaceDescriptor(null);
         setRegisterData({
           aadhaar: "",
@@ -296,17 +341,23 @@ function VoterLogin() {
           password: "",
           confirmPassword: "",
         });
+        setRegisterError("");
         setRegisterCameraOn(false);
         registerStreamRef.current?.getTracks().forEach(track => track.stop());
         registerStreamRef.current = null;
+        // Optionally switch to login tab
+        setActiveTab("login");
       } else {
-        toast.error(data.error || "Registration failed");
+        toast.error(data.error || "Registration failed", { id: 'register-submit' });
+        setRegisterError(data.error || "Registration failed");
       }
     } catch (err) {
       console.error("Error registering:", err);
+      toast.error("Network error. Please try again.", { id: 'register-submit' });
+      setRegisterError("Network error. Please try again.");
+    } finally {
+      // Don't clear form on error, only on success
     }
-
-    setRegisterError("");
   };
 
   return (
@@ -367,8 +418,9 @@ function VoterLogin() {
               onClick={toggleLoginCamera}
               className="camera-btn"
               style={{ marginTop: "12px" }}
+              disabled={modelsLoading}
             >
-              {loginCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              {modelsLoading ? "Loading..." : loginCameraOn ? "Turn Off Camera" : "Turn On Camera"}
             </button>
 
             {loginCameraOn && (
@@ -377,6 +429,7 @@ function VoterLogin() {
                   ref={loginVideoRef}
                   autoPlay
                   muted
+                  playsInline
                   width="100%"
                   style={{ borderRadius: "12px" }}
                 />
@@ -393,20 +446,23 @@ function VoterLogin() {
                     height: "60px",
                     borderRadius: "50%",
                     border: "none",
-                    backgroundImage: "linear-gradient(90deg, #23a8f2 0%, #1de9b6 100%)",
+                    backgroundImage: loginDescriptor 
+                      ? "linear-gradient(90deg, #4CAF50 0%, #45a049 100%)" 
+                      : "linear-gradient(90deg, #23a8f2 0%, #1de9b6 100%)",
                     color: "#fff",
                     fontWeight: "700",
                     fontSize: "1.6rem",
                     cursor: "pointer",
                     boxShadow: "0 4px 18px rgba(30,233,182,0.15)",
-                    display: loginCameraOn ? "flex" : "none",
+                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     userSelect: "none",
+                    transition: "all 0.3s ease",
                   }}
                   aria-label="Capture Face"
                 >
-                  📸
+                  {loginDescriptor ? "✓" : "📸"}
                 </button>
               </div>
             )}
@@ -417,6 +473,7 @@ function VoterLogin() {
               type="submit"
               className="login-btn-theme voter-btn-theme"
               style={{ marginTop: "12px" }}
+              disabled={!loginDescriptor}
             >
               Login
             </button>
@@ -429,7 +486,7 @@ function VoterLogin() {
             <input
               type="text"
               name="aadhaar"
-              placeholder="Aadhaar"
+              placeholder="Aadhaar (12 digits)"
               value={registerData.aadhaar}
               onChange={handleRegisterChange}
               className="login-input-theme"
@@ -438,7 +495,7 @@ function VoterLogin() {
             <input
               type="text"
               name="name"
-              placeholder="Name"
+              placeholder="Full Name"
               value={registerData.name}
               onChange={handleRegisterChange}
               className="login-input-theme"
@@ -447,7 +504,7 @@ function VoterLogin() {
             <input
               type="text"
               name="phone"
-              placeholder="Phone"
+              placeholder="Phone (10 digits)"
               value={registerData.phone}
               onChange={handleRegisterChange}
               className="login-input-theme"
@@ -456,7 +513,7 @@ function VoterLogin() {
             <input
               type="email"
               name="email"
-              placeholder="Email"
+              placeholder="Email Address"
               value={registerData.email}
               onChange={handleRegisterChange}
               className="login-input-theme"
@@ -465,7 +522,7 @@ function VoterLogin() {
             <input
               type="password"
               name="password"
-              placeholder="Password"
+              placeholder="Password (min 8 chars, 1 uppercase, 1 symbol)"
               value={registerData.password}
               onChange={handleRegisterChange}
               className="login-input-theme"
@@ -485,8 +542,10 @@ function VoterLogin() {
               type="button"
               onClick={toggleRegisterCamera}
               className="camera-btn"
+              style={{ marginTop: "12px" }}
+              disabled={modelsLoading}
             >
-              {registerCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              {modelsLoading ? "Loading..." : registerCameraOn ? "Turn Off Camera" : "Turn On Camera"}
             </button>
 
             {registerCameraOn && (
@@ -495,13 +554,14 @@ function VoterLogin() {
                   ref={registerVideoRef}
                   autoPlay
                   muted
+                  playsInline
                   width="100%"
                   style={{ borderRadius: "12px" }}
                 />
                 <button
                   type="button"
                   onClick={captureRegisterFace}
-                  disabled={!registerCameraOn}
+                  disabled={!registerCameraOn || !modelsLoaded}
                   style={{
                     position: "absolute",
                     bottom: "12px",
@@ -511,20 +571,23 @@ function VoterLogin() {
                     height: "60px",
                     borderRadius: "50%",
                     border: "none",
-                    backgroundImage: "linear-gradient(90deg, #23a8f2 0%, #1de9b6 100%)",
+                    backgroundImage: faceDescriptor 
+                      ? "linear-gradient(90deg, #4CAF50 0%, #45a049 100%)" 
+                      : "linear-gradient(90deg, #23a8f2 0%, #1de9b6 100%)",
                     color: "#fff",
                     fontWeight: "700",
                     fontSize: "1.6rem",
                     cursor: "pointer",
                     boxShadow: "0 4px 18px rgba(30,233,182,0.15)",
-                    display: registerCameraOn ? "flex" : "none",
+                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     userSelect: "none",
+                    transition: "all 0.3s ease",
                   }}
                   aria-label="Capture Face"
                 >
-                  📸
+                  {faceDescriptor ? "✓" : "📸"}
                 </button>
               </div>
             )}
@@ -537,6 +600,7 @@ function VoterLogin() {
               type="submit"
               className="login-btn-theme voter-btn-theme"
               style={{ marginTop: "12px" }}
+              disabled={!faceDescriptor}
             >
               Register
             </button>

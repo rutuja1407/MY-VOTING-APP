@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   FiActivity,
   FiAlertTriangle,
@@ -26,6 +32,264 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import "./AdminDashboard.css";
+
+function EditCandidateModal({
+  open,
+  onClose,
+  tab,
+  setTab,
+  form,
+  handleFormChange,
+  handleSaveCandidate,
+  validationError,
+  modalMode,
+}) {
+  if (!open) return null;
+  return (
+    <div className="candidate-modal-overlay">
+      <div className="candidate-modal" role="dialog" aria-modal="true">
+        <button
+          className="candidate-modal-close"
+          onClick={onClose}
+          type="button"
+          aria-label="Close"
+        >
+          <FiX size={24} />
+        </button>
+        <h2 className="candidate-modal-title">
+          {modalMode === "edit" ? "Edit Candidate" : "Add Candidate"}
+        </h2>
+        <div className="candidate-modal-tabs">
+          <button
+            className={`candidate-modal-tab${tab === "basic" ? " active" : ""}`}
+            onClick={() => setTab("basic")}
+            type="button"
+          >
+            <FiUser /> Basic
+          </button>
+          <button
+            className={`candidate-modal-tab${
+              tab === "details" ? " active" : ""
+            }`}
+            onClick={() => setTab("details")}
+            type="button"
+          >
+            <FiInfo /> Details
+          </button>
+          <button
+            className={`candidate-modal-tab${
+              tab === "social" ? " active" : ""
+            }`}
+            onClick={() => setTab("social")}
+            type="button"
+          >
+            <FiShare2 /> Social
+          </button>
+          <button
+            className={`candidate-modal-tab${
+              tab === "settings" ? " active" : ""
+            }`}
+            onClick={() => setTab("settings")}
+            type="button"
+          >
+            <FiSettings /> Settings
+          </button>
+        </div>
+        <form
+          className="candidate-modal-content"
+          onSubmit={handleSaveCandidate}
+        >
+          {validationError && (
+            <div className="validation-error">{validationError}</div>
+          )}
+
+          {tab === "basic" && (
+            <>
+              <div className="candidate-modal-section-title">
+                Basic Information
+              </div>
+              <div className="candidate-modal-grid">
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleFormChange}
+                  type="text"
+                  placeholder="Enter candidate name"
+                />
+                <input
+                  name="age"
+                  value={form.age ?? ""}
+                  onChange={handleFormChange}
+                  type="number"
+                  placeholder="Enter age"
+                />
+                <input
+                  name="party"
+                  value={form.party}
+                  onChange={handleFormChange}
+                  type="text"
+                  placeholder="Enter party name"
+                />
+                <select
+                  name="position"
+                  value={form.position}
+                  onChange={handleFormChange}
+                >
+                  <option value="">Select position</option>
+                  <option>President</option>
+                  <option>Governor</option>
+                  <option>Mayor</option>
+                </select>
+                <input
+                  name="email"
+                  value={form.email ?? ""}
+                  onChange={handleFormChange}
+                  type="email"
+                  placeholder="Enter email address"
+                />
+                <input
+                  name="phone"
+                  value={form.phone ?? ""}
+                  onChange={handleFormChange}
+                  type="text"
+                  placeholder="Enter phone number"
+                />
+                <input
+                  name="image"
+                  value={form.image}
+                  onChange={handleFormChange}
+                  type="text"
+                  placeholder="Enter image URL"
+                />
+              </div>
+            </>
+          )}
+
+          {tab === "details" && (
+            <>
+              <div className="candidate-modal-section-title">
+                Qualifications & Experience
+              </div>
+              <div className="candidate-modal-grid">
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Add qualification"
+                    style={{ flex: 1 }}
+                  />
+                  <button className="candidate-modal-qual-add" type="button">
+                    <FiPlus />
+                  </button>
+                </div>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleFormChange}
+                  placeholder="Describe relevant experience"
+                  style={{ gridColumn: "span 2" }}
+                />
+                <textarea
+                  placeholder="Enter election manifesto and key policies"
+                  style={{ gridColumn: "span 2" }}
+                />
+              </div>
+            </>
+          )}
+
+          {tab === "social" && (
+            <>
+              <div className="candidate-modal-section-title">
+                Social Media Links
+              </div>
+              <div className="candidate-modal-grid">
+                <input type="text" placeholder="https://twitter.com/username" />
+                <input
+                  type="text"
+                  placeholder="https://facebook.com/username"
+                />
+                <input
+                  type="text"
+                  placeholder="https://instagram.com/username"
+                />
+              </div>
+            </>
+          )}
+
+          {tab === "settings" && (
+            <>
+              <div className="candidate-modal-section-title">
+                Candidate Settings
+              </div>
+              <div className="candidate-modal-grid">
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleFormChange}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          <div className="candidate-modal-actions">
+            <button
+              className="candidate-modal-cancel"
+              type="button"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button className="candidate-modal-save" type="submit">
+              {modalMode === "edit" ? "Update Candidate" : "Add Candidate"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeleteCandidateModal({ open, onClose, onDelete }) {
+  if (!open) return null;
+  return (
+    <div className="candidate-modal-overlay">
+      <div className="delete-modal" role="dialog" aria-modal="true">
+        <button
+          className="candidate-modal-close"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <FiX size={24} />
+        </button>
+        <h2 className="delete-modal-title">Delete Candidate</h2>
+        <div className="delete-modal-desc">
+          Are you sure you want to delete this candidate? This action cannot be
+          undone.
+        </div>
+        <div className="candidate-modal-actions" style={{ marginTop: "2rem" }}>
+          <button className="candidate-modal-cancel" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="delete-modal-btn" onClick={onDelete}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Snackbar({ open }) {
+  if (!open) return null;
+  return (
+    <div className="snackbar">
+      <span>✓ Candidate deleted successfully!</span>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -80,24 +344,8 @@ export default function AdminDashboard() {
       try {
         const res = await fetch("http://localhost:8000/api/candidates");
         const data = await res.json();
-        if (!cancelled) setCandidates(Array.isArray(data?.candidates) ? data.candidates : []);
-      } catch (err) {
-        console.error("Error fetching candidates:", err);
-      }
-    };
-    fetchCandidates();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCandidates = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/candidates");
-        const data = await res.json();
-        if (!cancelled) setCandidates(Array.isArray(data?.candidates) ? data.candidates : []);
+        if (!cancelled)
+          setCandidates(Array.isArray(data?.candidates) ? data.candidates : []);
       } catch (err) {
         console.error("Error fetching candidates:", err);
       }
@@ -109,14 +357,29 @@ export default function AdminDashboard() {
   }, []);
 
   const analyticsData = useMemo(() => {
-    const totalVotes = candidates.reduce((sum, c) => sum + (Number(c.votes) || 0), 0);
-    const activeCandidates = candidates.filter((c) => c.status === "active").length;
-    const inactiveCandidates = candidates.filter((c) => c.status === "inactive").length;
-    const suspendedCandidates = candidates.filter((c) => c.status === "suspended").length;
+    const totalVotes = candidates.reduce(
+      (sum, c) => sum + (Number(c.votes) || 0),
+      0
+    );
+    const activeCandidates = candidates.filter(
+      (c) => c.status === "active"
+    ).length;
+    const inactiveCandidates = candidates.filter(
+      (c) => c.status === "inactive"
+    ).length;
+    const suspendedCandidates = candidates.filter(
+      (c) => c.status === "suspended"
+    ).length;
     const uniquePositions = new Set(candidates.map((c) => c.position)).size;
     const uniqueParties = new Set(candidates.map((c) => c.party)).size;
-    const previousTotalVotes = totalVotes > 0 ? Math.floor(totalVotes * 0.89) : 0;
-    const votesChange = previousTotalVotes > 0 ? Math.round(((totalVotes - previousTotalVotes) / previousTotalVotes) * 100) : 0;
+    const previousTotalVotes =
+      totalVotes > 0 ? Math.floor(totalVotes * 0.89) : 0;
+    const votesChange =
+      previousTotalVotes > 0
+        ? Math.round(
+            ((totalVotes - previousTotalVotes) / previousTotalVotes) * 100
+          )
+        : 0;
     const previousActiveCandidates = Math.max(0, activeCandidates - 1);
     const activeCandidatesChange = activeCandidates - previousActiveCandidates;
     return {
@@ -130,7 +393,8 @@ export default function AdminDashboard() {
       uniqueParties,
       activeSessions: activeCandidates > 0 ? 1 : 0,
       activeSessionsStatus: activeCandidates > 0 ? "Live" : "Inactive",
-      averageVotesPerCandidate: candidates.length > 0 ? Math.round(totalVotes / candidates.length) : 0,
+      averageVotesPerCandidate:
+        candidates.length > 0 ? Math.round(totalVotes / candidates.length) : 0,
     };
   }, [candidates]);
 
@@ -142,7 +406,10 @@ export default function AdminDashboard() {
       .map((candidate, index) => ({
         ...candidate,
         rank: index + 1,
-        percentage: total > 0 ? Math.round(((Number(candidate.votes) || 0) / total) * 100) : 0,
+        percentage:
+          total > 0
+            ? Math.round(((Number(candidate.votes) || 0) / total) * 100)
+            : 0,
       }));
   }, [candidates, analyticsData.totalVotes]);
 
@@ -176,34 +443,46 @@ export default function AdminDashboard() {
 
   // Backend call for deleting single candidate, then refresh list
   const confirmDeleteCandidate = useCallback(async () => {
-  if (deleteIndex === null) return;
-  const candidateToDelete = candidates[deleteIndex];
-  if (!candidateToDelete) return;
+    if (deleteIndex === null) return;
+    const candidateToDelete = candidates[deleteIndex];
+    if (!candidateToDelete) return;
 
-  try {
-    const candidateId = candidateToDelete._id || candidateToDelete.id;
-    const res = await fetch(`http://localhost:8000/api/candidates/${candidateId}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete candidate");
+    try {
+      const candidateId = candidateToDelete._id || candidateToDelete.id;
+      const res = await fetch(
+        `http://localhost:8000/api/candidates/${candidateId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete candidate");
 
-    await refreshCandidates();
-    setSnackbar(true);
-    setTimeout(() => setSnackbar(false), 2200);
-    setDeleteOpen(false);
-  } catch (err) {
-    toast.error("Failed to delete candidate");
-    console.error(err);
-  }
-}, [deleteIndex, candidates, refreshCandidates]);
-
+      await refreshCandidates();
+      setSnackbar(true);
+      setTimeout(() => setSnackbar(false), 2200);
+      setDeleteOpen(false);
+    } catch (err) {
+      toast.error("Failed to delete candidate");
+      console.error(err);
+    }
+  }, [deleteIndex, candidates, refreshCandidates]);
 
   const handleFormChange = useCallback((e) => {
     const { name, value } = e.target;
-    setForm((prev) => (prev[name] === value ? prev : { ...prev, [name]: value }));
+    setForm((prev) =>
+      prev[name] === value ? prev : { ...prev, [name]: value }
+    );
   }, []);
 
   const validateForm = useCallback(() => {
-    if (!form.name.trim() || !form.image.trim() || !form.position.trim() || !form.party.trim() || !form.description.trim()) {
-      setValidationError("Please fill all required fields: Name, Image URL, Position, Party, and Description.");
+    if (
+      !form.name.trim() ||
+      !form.image.trim() ||
+      !form.position.trim() ||
+      !form.party.trim() ||
+      !form.description.trim()
+    ) {
+      setValidationError(
+        "Please fill all required fields: Name, Image URL, Position, Party, and Description."
+      );
       return false;
     }
     setValidationError("");
@@ -275,7 +554,17 @@ export default function AdminDashboard() {
         } catch {}
       }
     },
-    [candidates, createCandidateRequest, editIndex, emptyForm, form, modalMode, updateCandidateRequest, validateForm, refreshCandidates]
+    [
+      candidates,
+      createCandidateRequest,
+      editIndex,
+      emptyForm,
+      form,
+      modalMode,
+      updateCandidateRequest,
+      validateForm,
+      refreshCandidates,
+    ]
   );
 
   const handleSelectAll = useCallback(() => {
@@ -321,14 +610,21 @@ export default function AdminDashboard() {
     reader.onload = async (e) => {
       try {
         const csvData = String(e.target?.result ?? "");
-        const lines = csvData.split("\n").map((l) => l.trim()).filter(Boolean);
+        const lines = csvData
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
         if (lines.length < 2) {
           toast.error("CSV file must contain at least header and one data row");
           return;
         }
-        const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/"/g, ""));
         const required = ["name", "party", "position", "description"];
-        const missing = required.filter((h) => !headers.some((x) => x.toLowerCase().includes(h)));
+        const missing = required.filter(
+          (h) => !headers.some((x) => x.toLowerCase().includes(h))
+        );
         if (missing.length) {
           toast.error(`Missing required columns: ${missing.join(", ")}`);
           return;
@@ -336,7 +632,9 @@ export default function AdminDashboard() {
 
         const newCandidates = [];
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""));
+          const values = lines[i]
+            .split(",")
+            .map((v) => v.trim().replace(/"/g, ""));
           if (values.length !== headers.length) continue;
           const obj = {};
           headers.forEach((h, idx) => {
@@ -361,7 +659,9 @@ export default function AdminDashboard() {
 
         if (newCandidates.length) {
           setCandidates((prev) => [...prev, ...newCandidates]);
-          toast.success(`Successfully imported ${newCandidates.length} candidates`);
+          toast.success(
+            `Successfully imported ${newCandidates.length} candidates`
+          );
         } else {
           toast.error("No valid candidate data found in CSV file");
         }
@@ -376,7 +676,18 @@ export default function AdminDashboard() {
 
   const handleExportCSV = useCallback(() => {
     try {
-      const headers = ["Name", "Age", "Party", "Position", "Email", "Phone", "Image", "Description", "Status", "Votes"];
+      const headers = [
+        "Name",
+        "Age",
+        "Party",
+        "Position",
+        "Email",
+        "Phone",
+        "Image",
+        "Description",
+        "Status",
+        "Votes",
+      ];
       const csvContent = [
         headers.join(","),
         ...candidates.map((c) =>
@@ -399,12 +710,16 @@ export default function AdminDashboard() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `candidates_export_${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `candidates_export_${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`Successfully exported ${candidates.length} candidates to CSV`);
+      toast.success(
+        `Successfully exported ${candidates.length} candidates to CSV`
+      );
     } catch (err) {
       console.error("Error exporting CSV:", err);
       toast.error("Error exporting data to CSV");
@@ -417,7 +732,9 @@ export default function AdminDashboard() {
         toast.error("Please select candidates first");
         return;
       }
-      setCandidates((prev) => prev.map((c) => (selectedCandidates.has(c.id) ? { ...c, status } : c)));
+      setCandidates((prev) =>
+        prev.map((c) => (selectedCandidates.has(c.id) ? { ...c, status } : c))
+      );
       toast.success(`${msg} ${selectedCandidates.size} candidates`);
       setSelectedCandidates(new Set());
       setSelectAll(false);
@@ -425,9 +742,18 @@ export default function AdminDashboard() {
     [selectedCandidates]
   );
 
-  const handleBulkActivate = useCallback(() => bulkUpdateStatus("active", "Activated"), [bulkUpdateStatus]);
-  const handleBulkDeactivate = useCallback(() => bulkUpdateStatus("inactive", "Deactivated"), [bulkUpdateStatus]);
-  const handleBulkSuspend = useCallback(() => bulkUpdateStatus("suspended", "Suspended"), [bulkUpdateStatus]);
+  const handleBulkActivate = useCallback(
+    () => bulkUpdateStatus("active", "Activated"),
+    [bulkUpdateStatus]
+  );
+  const handleBulkDeactivate = useCallback(
+    () => bulkUpdateStatus("inactive", "Deactivated"),
+    [bulkUpdateStatus]
+  );
+  const handleBulkSuspend = useCallback(
+    () => bulkUpdateStatus("suspended", "Suspended"),
+    [bulkUpdateStatus]
+  );
 
   // Bulk delete with backend calls and refresh
   const handleBulkDelete = useCallback(async () => {
@@ -439,8 +765,11 @@ export default function AdminDashboard() {
     try {
       await Promise.all(
         Array.from(selectedCandidates).map((id) =>
-          fetch(`http://localhost:8000/api/candidates/${id}`, { method: "DELETE" }).then((res) => {
-            if (!res.ok) throw new Error(`Failed to delete candidate with id ${id}`);
+          fetch(`http://localhost:8000/api/candidates/${id}`, {
+            method: "DELETE",
+          }).then((res) => {
+            if (!res.ok)
+              throw new Error(`Failed to delete candidate with id ${id}`);
           })
         )
       );
@@ -470,144 +799,6 @@ export default function AdminDashboard() {
     navigate("/", { replace: true });
   }, [navigate]);
 
-  function EditCandidateModal({ open, onClose, tab, setTab }) {
-    if (!open) return null;
-    return (
-      <div className="candidate-modal-overlay">
-        <div className="candidate-modal" role="dialog" aria-modal="true">
-          <button className="candidate-modal-close" onClick={onClose} type="button" aria-label="Close">
-            <FiX size={24} />
-          </button>
-          <h2 className="candidate-modal-title">{modalMode === "edit" ? "Edit Candidate" : "Add Candidate"}</h2>
-          <div className="candidate-modal-tabs">
-            <button className={`candidate-modal-tab${tab === "basic" ? " active" : ""}`} onClick={() => setTab("basic")} type="button">
-              <FiUser /> Basic
-            </button>
-            <button className={`candidate-modal-tab${tab === "details" ? " active" : ""}`} onClick={() => setTab("details")} type="button">
-              <FiInfo /> Details
-            </button>
-            <button className={`candidate-modal-tab${tab === "social" ? " active" : ""}`} onClick={() => setTab("social")} type="button">
-              <FiShare2 /> Social
-            </button>
-            <button className={`candidate-modal-tab${tab === "settings" ? " active" : ""}`} onClick={() => setTab("settings")} type="button">
-              <FiSettings /> Settings
-            </button>
-          </div>
-          <form className="candidate-modal-content" onSubmit={handleSaveCandidate}>
-            {validationError && <div className="validation-error">{validationError}</div>}
-
-            {tab === "basic" && (
-              <>
-                <div className="candidate-modal-section-title">Basic Information</div>
-                <div className="candidate-modal-grid">
-                  <input name="name" value={form.name} onChange={handleFormChange} type="text" placeholder="Enter candidate name" />
-                  <input name="age" value={form.age ?? ""} onChange={handleFormChange} type="number" placeholder="Enter age" />
-                  <input name="party" value={form.party} onChange={handleFormChange} type="text" placeholder="Enter party name" />
-                  <select name="position" value={form.position} onChange={handleFormChange}>
-                    <option value="">Select position</option>
-                    <option>President</option>
-                    <option>Governor</option>
-                    <option>Mayor</option>
-                  </select>
-                  <input name="email" value={form.email ?? ""} onChange={handleFormChange} type="email" placeholder="Enter email address" />
-                  <input name="phone" value={form.phone ?? ""} onChange={handleFormChange} type="text" placeholder="Enter phone number" />
-                  <input name="image" value={form.image} onChange={handleFormChange} type="text" placeholder="Enter image URL" />
-                </div>
-              </>
-            )}
-
-            {tab === "details" && (
-              <>
-                <div className="candidate-modal-section-title">Qualifications & Experience</div>
-                <div className="candidate-modal-grid">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <input type="text" placeholder="Add qualification" style={{ flex: 1 }} />
-                    <button className="candidate-modal-qual-add" type="button">
-                      <FiPlus />
-                    </button>
-                  </div>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleFormChange}
-                    placeholder="Describe relevant experience"
-                    style={{ gridColumn: "span 2" }}
-                  />
-                  <textarea placeholder="Enter election manifesto and key policies" style={{ gridColumn: "span 2" }} />
-                </div>
-              </>
-            )}
-
-            {tab === "social" && (
-              <>
-                <div className="candidate-modal-section-title">Social Media Links</div>
-                <div className="candidate-modal-grid">
-                  <input type="text" placeholder="https://twitter.com/username" />
-                  <input type="text" placeholder="https://facebook.com/username" />
-                  <input type="text" placeholder="https://instagram.com/username" />
-                </div>
-              </>
-            )}
-
-            {tab === "settings" && (
-              <>
-                <div className="candidate-modal-section-title">Candidate Settings</div>
-                <div className="candidate-modal-grid">
-                  <select name="status" value={form.status} onChange={handleFormChange}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div className="candidate-modal-actions">
-              <button className="candidate-modal-cancel" type="button" onClick={onClose}>
-                Cancel
-              </button>
-              <button className="candidate-modal-save" type="submit">
-                {modalMode === "edit" ? "Update Candidate" : "Add Candidate"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  function DeleteCandidateModal({ open, onClose, onDelete }) {
-    if (!open) return null;
-    return (
-      <div className="candidate-modal-overlay">
-        <div className="delete-modal" role="dialog" aria-modal="true">
-          <button className="candidate-modal-close" onClick={onClose} aria-label="Close">
-            <FiX size={24} />
-          </button>
-          <h2 className="delete-modal-title">Delete Candidate</h2>
-          <div className="delete-modal-desc">Are you sure you want to delete this candidate? This action cannot be undone.</div>
-          <div className="candidate-modal-actions" style={{ marginTop: "2rem" }}>
-            <button className="candidate-modal-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button className="delete-modal-btn" onClick={onDelete}>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function Snackbar({ open }) {
-    if (!open) return null;
-    return (
-      <div className="snackbar">
-        <span>✓ Candidate deleted successfully!</span>
-      </div>
-    );
-  }
-
   return (
     <div className="admin-dash-container">
       <header className="dash-header">
@@ -626,16 +817,37 @@ export default function AdminDashboard() {
       </header>
 
       <nav className="dash-nav">
-        <div className={`dash-nav-item${activeTab === "overview" ? " dash-nav-active" : ""}`} onClick={() => setActiveTab("overview")}>
+        <div
+          className={`dash-nav-item${
+            activeTab === "overview" ? " dash-nav-active" : ""
+          }`}
+          onClick={() => setActiveTab("overview")}
+        >
           <FiUserCheck /> Overview
         </div>
-        <div className={`dash-nav-item${activeTab === "candidates" ? " dash-nav-active" : ""}`} onClick={() => setActiveTab("candidates")}>
-          <FiUserCheck /> Candidates <span className="nav-count">{candidates.length}</span>
+        <div
+          className={`dash-nav-item${
+            activeTab === "candidates" ? " dash-nav-active" : ""
+          }`}
+          onClick={() => setActiveTab("candidates")}
+        >
+          <FiUserCheck /> Candidates{" "}
+          <span className="nav-count">{candidates.length}</span>
         </div>
-        <div className={`dash-nav-item${activeTab === "analytics" ? " dash-nav-active" : ""}`} onClick={() => setActiveTab("analytics")}>
+        <div
+          className={`dash-nav-item${
+            activeTab === "analytics" ? " dash-nav-active" : ""
+          }`}
+          onClick={() => setActiveTab("analytics")}
+        >
           <FiBarChart2 /> Analytics
         </div>
-        <div className={`dash-nav-item${activeTab === "bulk" ? " dash-nav-active" : ""}`} onClick={() => setActiveTab("bulk")}>
+        <div
+          className={`dash-nav-item${
+            activeTab === "bulk" ? " dash-nav-active" : ""
+          }`}
+          onClick={() => setActiveTab("bulk")}
+        >
           <FiLayers /> Bulk Operations
         </div>
       </nav>
@@ -645,7 +857,10 @@ export default function AdminDashboard() {
           <>
             <div className="dash-section-header">
               <h2>Admin Dashboard</h2>
-              <div className="dash-desc">Comprehensive management system for your online voting platform with facial detection</div>
+              <div className="dash-desc">
+                Comprehensive management system for your online voting platform
+                with facial detection
+              </div>
             </div>
             <div className="dash-cards">
               <div className="dash-card">
@@ -654,11 +869,15 @@ export default function AdminDashboard() {
               </div>
               <div className="dash-card">
                 <div className="dash-card-title">Positions</div>
-                <div className="dash-card-value">{analyticsData.uniquePositions}</div>
+                <div className="dash-card-value">
+                  {analyticsData.uniquePositions}
+                </div>
               </div>
               <div className="dash-card">
                 <div className="dash-card-title">Political Parties</div>
-                <div className="dash-card-value">{analyticsData.uniqueParties}</div>
+                <div className="dash-card-value">
+                  {analyticsData.uniqueParties}
+                </div>
               </div>
               <div className="dash-card">
                 <div className="dash-card-title">System Status</div>
@@ -674,11 +893,24 @@ export default function AdminDashboard() {
               <div className="candidate-management-title">
                 <FiUserPlus size={32} className="candidate-panel-icon" />
                 <div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#6a5ae0" }}>Candidate Management</div>
-                  <div style={{ fontSize: "1rem", color: "#818398" }}>Manage candidates for the voting system</div>
+                  <div
+                    style={{
+                      fontSize: "1.5rem",
+                      fontWeight: 700,
+                      color: "#6a5ae0",
+                    }}
+                  >
+                    Candidate Management
+                  </div>
+                  <div style={{ fontSize: "1rem", color: "#818398" }}>
+                    Manage candidates for the voting system
+                  </div>
                 </div>
               </div>
-              <button className="add-candidate-btn" onClick={handleAddCandidate}>
+              <button
+                className="add-candidate-btn"
+                onClick={handleAddCandidate}
+              >
                 <FiUserPlus size={20} style={{ marginRight: "8px" }} />
                 Add Candidate
               </button>
@@ -694,7 +926,7 @@ export default function AdminDashboard() {
                 <div>Actions</div>
               </div>
               {candidates.map((c, idx) => (
-                <div className="candidate-table-row" key={c.id}>
+                <div className="candidate-table-row" key={c._id}>
                   <div className="candidate-avatar">{c.name?.[0]}</div>
                   <div className="candidate-info">{c.name}</div>
                   <div>
@@ -705,10 +937,18 @@ export default function AdminDashboard() {
                   </div>
                   <div className="candidate-desc">{c.description}</div>
                   <div className="candidate-actions">
-                    <button className="candidate-edit-btn" onClick={() => handleEditCandidate(idx)} aria-label="Edit">
+                    <button
+                      className="candidate-edit-btn"
+                      onClick={() => handleEditCandidate(idx)}
+                      aria-label="Edit"
+                    >
                       <FiEdit2 size={20} />
                     </button>
-                    <button className="candidate-delete-btn" onClick={() => handleDeleteCandidate(idx)} aria-label="Delete">
+                    <button
+                      className="candidate-delete-btn"
+                      onClick={() => handleDeleteCandidate(idx)}
+                      aria-label="Delete"
+                    >
                       <FiTrash2 size={20} />
                     </button>
                   </div>
@@ -724,8 +964,12 @@ export default function AdminDashboard() {
               <div className="analytics-title">
                 <FiBarChart2 size={32} className="analytics-icon" />
                 <div>
-                  <div className="analytics-main-title">Analytics Dashboard</div>
-                  <div className="analytics-subtitle">Real-time voting insights and performance metrics</div>
+                  <div className="analytics-main-title">
+                    Analytics Dashboard
+                  </div>
+                  <div className="analytics-subtitle">
+                    Real-time voting insights and performance metrics
+                  </div>
                 </div>
               </div>
             </div>
@@ -739,10 +983,21 @@ export default function AdminDashboard() {
                   <div className="analytics-card-title">Total Votes Cast</div>
                 </div>
                 <div className="analytics-card-content">
-                  <div className="analytics-card-value">{analyticsData.totalVotes.toLocaleString()}</div>
-                  <div className={`analytics-card-trend ${analyticsData.totalVotesChange >= 0 ? "positive" : "negative"}`}>
+                  <div className="analytics-card-value">
+                    {analyticsData.totalVotes.toLocaleString()}
+                  </div>
+                  <div
+                    className={`analytics-card-trend ${
+                      analyticsData.totalVotesChange >= 0
+                        ? "positive"
+                        : "negative"
+                    }`}
+                  >
                     <FiTrendingUp size={14} />
-                    <span>{analyticsData.totalVotesChange >= 0 ? "+" : ""}{analyticsData.totalVotesChange}%</span>
+                    <span>
+                      {analyticsData.totalVotesChange >= 0 ? "+" : ""}
+                      {analyticsData.totalVotesChange}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -755,10 +1010,21 @@ export default function AdminDashboard() {
                   <div className="analytics-card-title">Active Candidates</div>
                 </div>
                 <div className="analytics-card-content">
-                  <div className="analytics-card-value">{analyticsData.activeCandidates}</div>
-                  <div className={`analytics-card-trend ${analyticsData.activeCandidatesChange >= 0 ? "positive" : "negative"}`}>
+                  <div className="analytics-card-value">
+                    {analyticsData.activeCandidates}
+                  </div>
+                  <div
+                    className={`analytics-card-trend ${
+                      analyticsData.activeCandidatesChange >= 0
+                        ? "positive"
+                        : "negative"
+                    }`}
+                  >
                     <FiTrendingUp size={14} />
-                    <span>{analyticsData.activeCandidatesChange >= 0 ? "+" : ""}{analyticsData.activeCandidatesChange}</span>
+                    <span>
+                      {analyticsData.activeCandidatesChange >= 0 ? "+" : ""}
+                      {analyticsData.activeCandidatesChange}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -771,8 +1037,16 @@ export default function AdminDashboard() {
                   <div className="analytics-card-title">Active Sessions</div>
                 </div>
                 <div className="analytics-card-content">
-                  <div className="analytics-card-value">{analyticsData.activeSessions}</div>
-                  <div className={`analytics-card-status ${analyticsData.activeSessionsStatus === "Live" ? "live" : "inactive"}`}>
+                  <div className="analytics-card-value">
+                    {analyticsData.activeSessions}
+                  </div>
+                  <div
+                    className={`analytics-card-status ${
+                      analyticsData.activeSessionsStatus === "Live"
+                        ? "live"
+                        : "inactive"
+                    }`}
+                  >
                     <span>{analyticsData.activeSessionsStatus}</span>
                   </div>
                 </div>
@@ -791,7 +1065,9 @@ export default function AdminDashboard() {
                 {topPerformingCandidates.map((candidate) => (
                   <div key={candidate.id} className="top-performer-item">
                     <div className="performer-left-section">
-                      <div className={`performer-rank rank-${candidate.rank}`}>{candidate.rank}</div>
+                      <div className={`performer-rank rank-${candidate.rank}`}>
+                        {candidate.rank}
+                      </div>
                       <div className="performer-avatar">
                         {candidate.image ? (
                           <>
@@ -805,26 +1081,40 @@ export default function AdminDashboard() {
                                 if (next) next.style.display = "flex";
                               }}
                             />
-                            <div className="performer-avatar-fallback" style={{ display: "none" }}>
+                            <div
+                              className="performer-avatar-fallback"
+                              style={{ display: "none" }}
+                            >
                               {candidate.name[0]}
                             </div>
                           </>
                         ) : (
-                          <div className="performer-avatar-fallback">{candidate.name[0]}</div>
+                          <div className="performer-avatar-fallback">
+                            {candidate.name[0]}
+                          </div>
                         )}
                       </div>
                     </div>
 
                     <div className="performer-info">
                       <div className="performer-name">{candidate.name}</div>
-                      <div className="performer-position">{candidate.position}</div>
+                      <div className="performer-position">
+                        {candidate.position}
+                      </div>
                     </div>
 
                     <div className="performer-stats">
-                      <div className="performer-votes">{candidate.votes} votes</div>
-                      <div className="performer-percentage">{candidate.percentage}%</div>
+                      <div className="performer-votes">
+                        {candidate.votes} votes
+                      </div>
+                      <div className="performer-percentage">
+                        {candidate.percentage}%
+                      </div>
                       <div className="performer-progress">
-                        <div className="performer-progress-fill" style={{ width: `${candidate.percentage}%` }} />
+                        <div
+                          className="performer-progress-fill"
+                          style={{ width: `${candidate.percentage}%` }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -841,12 +1131,20 @@ export default function AdminDashboard() {
                 <FiLayers size={32} className="bulk-operations-icon" />
                 <div>
                   <div className="bulk-title">Bulk Operations</div>
-                  <div className="bulk-subtitle">Import, export, and manage candidates in bulk</div>
+                  <div className="bulk-subtitle">
+                    Import, export, and manage candidates in bulk
+                  </div>
                 </div>
               </div>
             </div>
 
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" style={{ display: "none" }} />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".csv"
+              style={{ display: "none" }}
+            />
 
             <div className="bulk-operations-grid">
               <div className="bulk-section import-section">
@@ -854,9 +1152,14 @@ export default function AdminDashboard() {
                   <FiUpload className="section-icon" size={24} />
                   <h3>Import Candidates</h3>
                 </div>
-                <p className="bulk-section-desc">Upload CSV file or paste data to import multiple candidates</p>
+                <p className="bulk-section-desc">
+                  Upload CSV file or paste data to import multiple candidates
+                </p>
                 <div className="bulk-action-area">
-                  <button className="bulk-import-btn" onClick={handleImportData}>
+                  <button
+                    className="bulk-import-btn"
+                    onClick={handleImportData}
+                  >
                     <FiUpload size={20} />
                     Import Data
                   </button>
@@ -871,13 +1174,17 @@ export default function AdminDashboard() {
                   <FiDownload className="section-icon" size={24} />
                   <h3>Export Candidates</h3>
                 </div>
-                <p className="bulk-section-desc">Download all candidate data as CSV file</p>
+                <p className="bulk-section-desc">
+                  Download all candidate data as CSV file
+                </p>
                 <div className="bulk-action-area">
                   <button className="bulk-export-btn" onClick={handleExportCSV}>
                     <FiDownload size={20} />
                     Export CSV
                   </button>
-                  <div className="bulk-candidates-count">{candidates.length} candidates available</div>
+                  <div className="bulk-candidates-count">
+                    {candidates.length} candidates available
+                  </div>
                 </div>
               </div>
             </div>
@@ -888,24 +1195,38 @@ export default function AdminDashboard() {
                 <h3>Bulk Actions</h3>
               </div>
               <div className="bulk-actions-grid">
-                <button className="bulk-action-btn activate-btn" onClick={handleBulkActivate}>
+                <button
+                  className="bulk-action-btn activate-btn"
+                  onClick={handleBulkActivate}
+                >
                   <FiPlay size={20} />
                   Activate Selected
                 </button>
-                <button className="bulk-action-btn deactivate-btn" onClick={handleBulkDeactivate}>
+                <button
+                  className="bulk-action-btn deactivate-btn"
+                  onClick={handleBulkDeactivate}
+                >
                   <FiPause size={20} />
                   Deactivate Selected
                 </button>
-                <button className="bulk-action-btn suspend-btn" onClick={handleBulkSuspend}>
+                <button
+                  className="bulk-action-btn suspend-btn"
+                  onClick={handleBulkSuspend}
+                >
                   <FiAlertTriangle size={20} />
                   Suspend Selected
                 </button>
-                <button className="bulk-action-btn delete-btn" onClick={handleBulkDelete}>
+                <button
+                  className="bulk-action-btn delete-btn"
+                  onClick={handleBulkDelete}
+                >
                   <FiTrash2 size={20} />
                   Delete Selected
                 </button>
               </div>
-              <div className="selected-count">Selected: {selectedCandidates.size} candidates</div>
+              <div className="selected-count">
+                Selected: {selectedCandidates.size} candidates
+              </div>
             </div>
 
             <div className="bulk-candidate-list">
@@ -917,7 +1238,12 @@ export default function AdminDashboard() {
               <div className="bulk-candidate-table">
                 <div className="bulk-table-header">
                   <div className="bulk-checkbox-cell">
-                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="bulk-checkbox" />
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      className="bulk-checkbox"
+                    />
                   </div>
                   <div>Name</div>
                   <div>Party</div>
@@ -936,17 +1262,26 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div className="bulk-candidate-info">
-                      <div className="bulk-candidate-avatar">{candidate.name[0]}</div>
+                      <div className="bulk-candidate-avatar">
+                        {candidate.name[0]}
+                      </div>
                       <span>{candidate.name}</span>
                     </div>
                     <div>
-                      <span className="bulk-candidate-party">{candidate.party}</span>
+                      <span className="bulk-candidate-party">
+                        {candidate.party}
+                      </span>
                     </div>
                     <div>
-                      <span className="bulk-candidate-position">{candidate.position}</span>
+                      <span className="bulk-candidate-position">
+                        {candidate.position}
+                      </span>
                     </div>
                     <div>
-                      <span className="bulk-candidate-status" style={getStatusBadge(candidate.status)}>
+                      <span
+                        className="bulk-candidate-status"
+                        style={getStatusBadge(candidate.status)}
+                      >
                         {candidate.status}
                       </span>
                     </div>
@@ -957,8 +1292,22 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <EditCandidateModal open={modalOpen} onClose={() => setModalOpen(false)} tab={modalTab} setTab={setModalTab} />
-        <DeleteCandidateModal open={deleteOpen} onClose={() => setDeleteOpen(false)} onDelete={confirmDeleteCandidate} />
+        <EditCandidateModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tab={modalTab}
+          setTab={setModalTab}
+          form={form}
+          handleFormChange={handleFormChange}
+          handleSaveCandidate={handleSaveCandidate}
+          validationError={validationError}
+          modalMode={modalMode}
+        />
+        <DeleteCandidateModal
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          onDelete={confirmDeleteCandidate}
+        />
         <Snackbar open={snackbar} />
       </main>
     </div>
